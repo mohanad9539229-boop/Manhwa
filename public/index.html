@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer" />
+    <title>Tachiyomi Web - Mangalik</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #121212;
+            --bg-secondary: #1e1e1e;
+            --bg-surface: #282828;
+            --accent: #d32f2f;
+            --accent-hover: #f44336;
+            --text-main: #ffffff;
+            --text-sub: #b0b0b0;
+            --border: #333333;
+            --sidebar-width: 240px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Cairo', sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar - Tachiyomi Navigation */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--bg-secondary);
+            border-left: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 10px;
+            gap: 15px;
+            z-index: 10;
+        }
+
+        .brand {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-align: center;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .nav-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-sub);
+            padding: 12px 16px;
+            border-radius: 8px;
+            text-align: right;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-btn:hover, .nav-btn.active {
+            background-color: var(--bg-surface);
+            color: var(--text-main);
+        }
+
+        .nav-btn.active {
+            border-right: 4px solid var(--accent);
+        }
+
+        /* Main View Container */
+        .main-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        /* Header Searchbar */
+        .header {
+            padding: 15px 25px;
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            max-width: 450px;
+        }
+
+        .search-box input {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 15px;
+            border-radius: 6px;
+            outline: none;
+        }
+
+        .search-box button {
+            background: var(--accent);
+            border: none;
+            color: white;
+            padding: 8px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 700;
+        }
+
+        /* Content Grid */
+        .content {
+            padding: 25px;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            font-weight: 700;
+            border-bottom: 2px solid var(--accent);
+            display: inline-block;
+            padding-bottom: 4px;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--bg-secondary);
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+        }
+
+        .card img {
+            width: 100%;
+            height: 220px;
+            object-fit: cover;
+        }
+
+        .card-info {
+            padding: 10px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 700;
+            line-height: 1.3;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .card-badge {
+            font-size: 0.75rem;
+            color: var(--accent);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        /* Manga Details View */
+        .details-view {
+            display: none;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .details-header {
+            display: flex;
+            gap: 25px;
+            background: var(--bg-secondary);
+            padding: 20px;
+            border-radius: 12px;
+        }
+
+        .details-cover {
+            width: 180px;
+            height: 260px;
+            border-radius: 8px;
+            object-fit: cover;
+        }
+
+        .details-meta {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .details-summary {
+            font-size: 0.9rem;
+            color: var(--text-sub);
+            max-height: 120px;
+            overflow-y: auto;
+            line-height: 1.6;
+        }
+
+        .chapter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 15px;
+        }
+
+        .chapter-item {
+            background: var(--bg-secondary);
+            padding: 12px 20px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .chapter-item:hover {
+            background: var(--bg-surface);
+            border-right: 4px solid var(--accent);
+        }
+
+        /* Reader Overlay */
+        .reader-view {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #000;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .reader-header {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            background: rgba(18, 18, 18, 0.9);
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(8px);
+            z-index: 101;
+        }
+
+        .reader-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 60px;
+            margin-bottom: 40px;
+            width: 100%;
+        }
+
+        .reader-content img {
+            width: 100%;
+            max-width: 800px;
+            height: auto;
+            display: block;
+        }
+
+        .loader {
+            text-align: center;
+            padding: 40px;
+            font-size: 1.2rem;
+            color: var(--text-sub);
+        }
+
+        .btn-back {
+            background: var(--bg-surface);
+            color: white;
+            border: none;
+            padding: 6px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 768px) {
+            body { flex-direction: column; }
+            .sidebar { width: 100%; height: auto; flex-direction: row; justify-content: space-around; padding: 10px; }
+            .brand { display: none; }
+            .details-header { flex-direction: column; align-items: center; text-align: center; }
+            .reader-content img { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="brand">📖 Tachiyomi</div>
+        <button class="nav-btn active" onclick="loadLatest()">🔥 أحدث المانهوا</button>
+        <button class="nav-btn" onclick="showBookmarks()">🔖 المحفوظات</button>
+    </div>
+
+    <!-- Main View -->
+    <div class="main-container">
+        <!-- Top Bar -->
+        <div class="header">
+            <div class="search-box">
+                <input type="text" id="searchInput" placeholder="ابحث عن مانهوا..." onkeypress="handleSearch(event)">
+                <button onclick="executeSearch()">بحث</button>
+            </div>
+            <button id="backBtn" class="btn-back" style="display:none;" onclick="backToMain()">رجوع ↩</button>
+        </div>
+
+        <!-- Dynamic Content -->
+        <div class="content">
+            <!-- Grid Container -->
+            <div id="mainSection">
+                <div class="section-title" id="sectionTitle">أحدث المانهوات المضافة</div>
+                <div class="grid" id="mangaGrid">
+                    <div class="loader">جاري التحميل...</div>
+                </div>
+            </div>
+
+            <!-- Details Container -->
+            <div id="detailsSection" class="details-view">
+                <div class="details-header">
+                    <img id="dCover" class="details-cover" src="" alt="">
+                    <div class="details-meta">
+                        <h2 id="dTitle"></h2>
+                        <div class="details-summary" id="dSummary"></div>
+                    </div>
+                </div>
+                <div class="section-title">الفصول</div>
+                <div class="chapter-list" id="chapterList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Web Reader (Webtoon Reader Mode) -->
+    <div id="readerView" class="reader-view">
+        <div class="reader-header">
+            <button class="btn-back" onclick="closeReader()">إغلاق القارئ ✖</button>
+            <span id="readerTitle" style="font-weight:700;">الفصل</span>
+        </div>
+        <div class="reader-content" id="readerPages">
+            <div class="loader">جاري تحميل صفحات الفصل...</div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = '/api/manga';
+        let currentSlug = '';
+
+        // Initial Load
+        window.onload = () => loadLatest();
+
+        async function loadLatest() {
+            showMainView();
+            document.getElementById('sectionTitle').innerText = 'أحدث المانهوات المضافة';
+            const grid = document.getElementById('mangaGrid');
+            grid.innerHTML = '<div class="loader">جاري جلب أحدث المانهوا...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=latest`);
+                const data = await res.json();
+                renderGrid(data.results || []);
+            } catch (e) {
+                grid.innerHTML = '<div class="loader">حدث خطأ أثناء تحميل البيانات!</div>';
+            }
+        }
+
+        async function executeSearch() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) return;
+
+            showMainView();
+            document.getElementById('sectionTitle').innerText = `نتائج البحث عن: ${query}`;
+            const grid = document.getElementById('mangaGrid');
+            grid.innerHTML = '<div class="loader">جاري البحث...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=search&query=${encodeURIComponent(query)}`);
+                const data = await res.json();
+                renderGrid(data.results || []);
+            } catch (e) {
+                grid.innerHTML = '<div class="loader">خطأ في البحث!</div>';
+            }
+        }
+
+        function handleSearch(e) {
+            if (e.key === 'Enter') executeSearch();
+        }
+
+        function renderGrid(list) {
+            const grid = document.getElementById('mangaGrid');
+            if (!list.length) {
+                grid.innerHTML = '<div class="loader">لم يتم العثور على أي نتائج.</div>';
+                return;
+            }
+
+            grid.innerHTML = list.map(item => `
+                <div class="card" onclick="loadDetails('${item.slug}')">
+                    <img src="${item.cover || 'https://via.placeholder.com/150x220'}" loading="lazy">
+                    <div class="card-info">
+                        <div class="card-title">${item.title}</div>
+                        ${item.latestChapter ? `<div class="card-badge">${item.latestChapter}</div>` : ''}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadDetails(slug) {
+            currentSlug = slug;
+            document.getElementById('mainSection').style.display = 'none';
+            document.getElementById('detailsSection').style.display = 'flex';
+            document.getElementById('backBtn').style.display = 'block';
+
+            const cList = document.getElementById('chapterList');
+            cList.innerHTML = '<div class="loader">جاري جلب تفاصيل المانهوا...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=details&slug=${slug}`);
+                const data = await res.json();
+                const d = data.details;
+
+                document.getElementById('dTitle').innerText = d.title;
+                document.getElementById('dCover').src = d.cover;
+                document.getElementById('dSummary').innerText = d.summary || 'لا يوجد وصف متوفر.';
+
+                cList.innerHTML = d.chapters.map(ch => `
+                    <div class="chapter-item" onclick="openChapter('${slug}', '${ch.slug}', '${ch.title}')">
+                        <span>${ch.title}</span>
+                        <span style="font-size:0.8rem; color:var(--text-sub);">${ch.date}</span>
+                    </div>
+                `).join('');
+
+            } catch (e) {
+                cList.innerHTML = '<div class="loader">خطأ أثناء التحميل!</div>';
+            }
+        }
+
+        async function openChapter(slug, chapterSlug, title) {
+            const reader = document.getElementById('readerView');
+            const pagesBox = document.getElementById('readerPages');
+            document.getElementById('readerTitle').innerText = title;
+            reader.style.display = 'flex';
+            pagesBox.innerHTML = '<div class="loader">جاري فتح القارئ وتحميل الصور...</div>';
+
+            try {
+                const res = await fetch(`${API_URL}?action=pages&slug=${slug}&chapter=${chapterSlug}`);
+                const data = await res.json();
+
+                if (data.pages && data.pages.length > 0) {
+                    pagesBox.innerHTML = data.pages.map(imgSrc => `<img src="${imgSrc}" loading="lazy">`).join('');
+                } else {
+                    pagesBox.innerHTML = '<div class="loader">لا توجد صور متوفرة لهذا الفصل.</div>';
+                }
+            } catch (e) {
+                pagesBox.innerHTML = '<div class="loader">فشل في تحميل صور الفصل!</div>';
+            }
+        }
+
+        function closeReader() {
+            document.getElementById('readerView').style.display = 'none';
+        }
+
+        function showMainView() {
+            document.getElementById('mainSection').style.display = 'block';
+            document.getElementById('detailsSection').style.display = 'none';
+            document.getElementById('backBtn').style.display = 'none';
+        }
+
+        function backToMain() {
+            showMainView();
+        }
+
+        function showBookmarks() {
+            alert("ميزة المحفوظات قادمة قريباً!");
+        }
+    </script>
+</body>
+</html>
